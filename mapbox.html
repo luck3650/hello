@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MapBox0.54</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<script src='https://api.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.js'></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v0.54.0/mapbox-gl.css">
+<style>
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoiYWVzcWUiLCJhIjoiY2lmNGVxYnNnMDNrenJya2xzbmQ4M281bCJ9.GfMJ8R2NX1dDcc9Hs2PO3A';
+
+const map = new mapboxgl.Map({
+	container: 'map', // container ID
+	style: "mapbox://styles/mapbox/streets-v8",
+	// pitch: 60, //3D视图倾斜角度
+	// bearing: 30, //方向北的左倾角度
+	// rotation: 19.313180925794313,
+	pitchWithRotate: true,
+	touchZoomRotate: true,
+	center: [118.79, 32.1], //nanjing
+	zoom: 13 // starting zoom
+});
+
+
+
+//添加比例尺
+var scale = new mapboxgl.ScaleControl({
+			maxWidth: 100,
+			unit: 'metric'
+		});
+map.addControl(scale, "bottom-left");
+
+ 		// 隐藏右下角的mapbox标识
+		var mapCtl = document.querySelector('.mapboxgl-ctrl-attrib-inner');
+		if (mapCtl) {
+			mapCtl.style.display = 'none';
+		};
+
+//导航控制
+const nav = new mapboxgl.NavigationControl({
+    visualizePitch: true
+});
+map.addControl(nav, 'bottom-right');
+
+</script>
+</body>
+</html>
