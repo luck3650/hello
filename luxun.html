@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鲁迅宇宙之西贝2026</title>
+    <style>
+        /* ----- 基础重置与变量 ----- */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #10b981;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+
+            --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            --space-1: 0.25rem;
+            --space-2: 0.5rem;
+            --space-3: 0.75rem;
+            --space-4: 1rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-12: 3rem;
+            --space-16: 4rem;
+            --radius: 0.375rem;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            font-family: var(--font-sans);
+            color: var(--gray-800);
+            line-height: 1.5;
+            background-color: white;
+            animation: pageFadeIn 0.5s ease-out;
+        }
+
+        @keyframes pageFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 排版 */
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: var(--space-4);
+        }
+        h1 { font-size: 2.5rem; }
+        h2 { font-size: 2rem; }
+        h3 { font-size: 1.5rem; }
+        h4 { font-size: 1.25rem; }
+        p { margin-bottom: var(--space-4); }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .container {
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 var(--space-4);
+        }
+
+        /* 动画辅助类 - 用于滚动触发 */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 1s ease, transform 1s ease;
+        }
+        .animate-on-scroll.animated {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            background-color: white;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 4rem;
+        }
+        .nav-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: var(--space-6);
+        }
+        .nav-menu a {
+            color: var(--gray-700);
+            font-weight: 500;
+            position: relative;
+        }
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            color: var(--primary);
+        }
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+        .nav-menu a:hover::after,
+        .nav-menu a.active::after {
+            width: 100%;
+        }
+        .nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-700);
+        }
+
+        /* 英雄区 */
+        .hero {
+            padding: var(--space-16) 0;
+            background: linear-gradient(to right, var(--gray-50), white);
+            text-align: center;
+        }
+        .hero h1 {
+            font-size: 3rem;
+            max-width: 800px;
+            margin: 0 auto var(--space-4);
+        }
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--gray-600);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* 提示框 */
+        .alert {
+            padding: var(--space-4);
+            border-radius: var(--radius);
+            margin-bottom: var(--space-4);
+        }
+        .alert-info {
+            background-color: #dbeafe;
+            color: #1e3a8a;
+        }
+        .alert-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .alert-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .alert-danger {
+            background-color: #bdb76b;
+            color: #991b1b;
+        }
+
+        /* 页脚 */
+        .footer {
+            background-color: var(--gray-800);
+            color: var(--gray-300);
+            padding: var(--space-12) 0 var(--space-6);
+            margin-top: var(--space-16);
+        }
+        .footer a {
+            color: var(--gray-300);
+        }
+        .footer a:hover {
+            color: white;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.75rem; }
+            .nav-menu {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 4rem;
+                left: 0;
+                right: 0;
+                background: white;
+                padding: var(--space-4);
+                box-shadow: var(--shadow-md);
+                gap: var(--space-4);
+            }
+            .nav-menu.active {
+                display: flex;
+            }
+            .nav-toggle {
+                display: block;
+            }
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* 工具类 */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 导航栏 -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="#" class="nav-logo">Hello,</a>
+            <button class="nav-toggle" aria-label="切换菜单" aria-expanded="false">☰</button>
+            <ul class="nav-menu" id="nav-menu">
+                <li><a href="#" class="heroSection">首页</a></li>
+                <li><a href="#content1">蓝色</a></li>
+                <li><a href="#content2">绿色</a></li>
+                <li><a href="#content3">橙色</a></li>
+                <li><a href="#content4">红色</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main>
+        <!-- 英雄区-->
+        <section class="hero" id="heroSection">
+            <div class="container">
+                <h1 id="heroTitle">鲁迅宇宙人物小传之..</h1>
+                <p id="heroSubtitle">西贝预制菜2026</p>
+            </div>
+        </section>
+
+        <div id="contents" class="container">
+            <h3 id="content1">2026 丙午马年, 世间本太平无事</h3>
+            <div class="alert alert-info animate-on-scroll" data-delay="0">
+            我是迅哥儿。许久没出去吃饭了。这一日看到网上西贝菜颇火，某日闲余，随寻到一家西贝门店。入座，点菜，一切开始。<br><br>
+            我翻开菜单一查，这菜单没有年代，歪歪斜斜的每页上都写着‘新鲜热炒’四个字。<br>
+            我横竖吃不下，仔细看了半天，才从字缝里看出字来，原来满本都写着两个字：‘预制’！<br><br>
+
+            这精致的菜单用塑封包裹着，像书一样的串起来，让人翻着。或许店里也真的希望食客们把它当做书一样来翻看，阅读。<br><br>
+
+            这天下着雨，孔乙己也来了。<br>
+            他刚进门，就有人叫道，“孔乙己，你在网上又传绯闻了哈!”。<br>
+            他不理会，对着西贝柜台说，“温两碗酒，要一碟茴香豆。”  末了又重重强调：“不要预制菜，要早上新鲜炒的”，随后便掏出手机要扫码付钱。最终还不忘举起剪刀手拍个照。 <br>
+            这时又有人故意的高声嚷道，“你一定又去吃了别家的预制菜了!”<br>
+            孔乙己睁大眼睛说：“你怎么这样凭空污人清白……”<br>
+            “什么凭空? 我前几天亲眼见你在老乡鸡吃酱肉面和麻辣烤鸡翅。”<br>
+            孔乙己便涨红了脸，额上的青筋条条绽出，争辩道，“老、老乡鸡的，不能算预制，便宜大份的菜，能算预制么?”<br>
+            接着便是一连串难懂的话，什么“中央厨房”，什么“统一市场”之类，引得众人都哄笑起来，一时间店内外充满了快活的空气。<br>
+            </div>
+            
+            <div id="content2" class="alert alert-success animate-on-scroll" data-delay="300">
+孔乙己不理会他们，独自一人慢慢的喝着。他转过头去，目光穿过硕大的玻璃窗，望向了后厨：<br>
+在西贝的后厨，可以看见窗外有两箱菜，一箱是预制菜，还有一箱，也是预制菜...<br><br>
+
+他嘴里嚼着，喃喃自语道：其实世上本没有预制菜，吃的人多了，也就有了预制。<br><br>
+
+孔乙己喝完最后一口酒，忽然猛的站起身来，对着方才嘲笑他的人群说：真的猛士，敢于直面惨淡的人生，敢于正视预制的菜！<br><br>
+
+众人被他吓了一跳，都面面相觑，不知道孔乙己这是又要唱哪出。其间有个叫阿Q的中年男子缓缓站起身来，莫名其妙的说了句：今天晚上，很好的月光，还有这盘预制西蓝花，再加一个48元的古法呛面人血大馒头，正好拿来下酒！<br>
+            </div>
+            
+            <div id="content3" class="alert alert-warning animate-on-scroll" data-delay="600">
+那时的我，还未去厦大任教，所有总还有些闲余的时光，平日间转转S城的大街小巷。<br><br>
+某一日，我买了一向爱吃的兰花糕饼，抱着往回走。刚转过咸亨酒店的街角，就听到旁边的巷子口，有人高声叫到：迅哥儿，是你么？<br>
+我转过头去，有些疑惑的看着对面。不认识，也不记得曾经哪里遇到过。<br>
+正当我心里想着：这或许又是哪个看过我文章的要找我来算账的，或许是吵架的也说不定。那人快速放下手里的竹筐和扁担，小步跑过来，微微弯着腰，仔细的瞧着我，双手却又淡淡的放下去了，闲在腰间，好像那手是多余的一般。<br>
+我虽说平时不太爱搭理外人，可是见他如此这般诚恳的样子，却也止不住的客气起来。<br>
+“哦，你是，哪位？    或许确在哪里见过的，可我却是一时记不起了”，我慢慢的说着，像是喃喃自语。<br>
+“迅哥儿，我！ 你记不得了？” 他脸上有些兴奋的神色，但还是腼腆的对我说。<br>
+“我，真的是没想起来。   你是S城的吗？还是我们在北平认识的？”<br>
+“是我呀，迅哥儿，闰土！小时我俩一起在祭典上守过祭器。  我还教你如何捕鸟...”<br> 
+            </div>
+            
+            <div id="content4" class="alert alert-danger animate-on-scroll" data-delay="600">
+我忽然脑海里被闪电激活了一般，一幅幅活动的画面在眼前飘过。 <br>
+夜晚海边的沙滩上，三三两两来赶海直播的少年们，追逐着退潮。<br><br>
+一轮金黄的圆月，悬在深蓝的夜空中。<br>
+沙滩上一望无际的西瓜田，“嗖，嗖”的响着。 其间一个十几岁的少年，头上带着渔夫帽，还有个支架套在上面，紧紧的夹住手机，像是也在直播着。<br>
+快速翻动的西瓜叶子下面，忽然窜出来一只肥大的猹，它油光水滑的背面，正映出圆月的光来。<br>
+少年举起钢叉，奋力刺去。<br>
+那猹却将身一扭，反从他的胯下逃走了。<br>
+            </div>
+            
+        </div>
+        
+
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div   style="border-top: 1px solid var(--gray-700); padding-top: var(--space-6); text-align: center;">
+                <p>&copy; 很多人想改变世界，却很少有人想改变自己。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function() {
+            // 响应式菜单
+            const toggleBtn = document.querySelector('.nav-toggle');
+            const navMenu = document.getElementById('nav-menu');
+            if (toggleBtn && navMenu) {
+                toggleBtn.addEventListener('click', function() {
+                    const expanded = this.getAttribute('aria-expanded') === 'true' ? false : true;
+                    navMenu.classList.toggle('active');
+                    this.setAttribute('aria-expanded', expanded);
+                });
+                // 点击链接后关闭菜单（移动端）
+                navMenu.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', function() {
+                        if (window.innerWidth <= 768) {
+                            navMenu.classList.remove('active');
+                            toggleBtn.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                });
+            }
+
+            // 滚动动画：使用Intersection Observer添加类，通过CSS transition实现缓慢出现
+            if ('IntersectionObserver' in window) {
+                const animatedElements = document.querySelectorAll('.animate-on-scroll');
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const el = entry.target;
+                            const delay = el.getAttribute('data-delay') || '0';
+                            // 设置transition-delay，实现延迟出现
+                            el.style.transitionDelay = delay + 'ms';
+                            el.classList.add('animated');
+                            observer.unobserve(el);
+                        }
+                    });
+                }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+                animatedElements.forEach(el => observer.observe(el));
+            } else {
+                // 降级：直接显示所有元素
+                document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                });
+            }
+
+            // 简单导航高亮（基于锚点）
+            const links = document.querySelectorAll('.nav-menu a');
+            const setActive = () => {
+                const hash = window.location.hash || '#';
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    link.classList.toggle('active', href === hash || (hash === '#' && href === '#'));
+                });
+            };
+            window.addEventListener('hashchange', setActive);
+            setActive();
+        })();
+    </script>
+</body>
+</html>
