@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Effects Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg-secondary: #12121a;
+            --fg: #e8e8ec;
+            --muted: #6b6b7a;
+            --accent: #ff6b35;
+            --accent-glow: rgba(255, 107, 53, 0.4);
+            --card: #1a1a24;
+            --border: #2a2a38;
+            --success: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .font-display {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Background atmosphere */
+        .bg-atmosphere {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 107, 53, 0.06) 0%, transparent 50%),
+                var(--bg);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Navigation */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1.5rem 2rem;
+            background: linear-gradient(180deg, rgba(10, 10, 15, 0.98) 0%, rgba(10, 10, 15, 0) 100%);
+        }
+
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--fg);
+            letter-spacing: 0.1em;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--card);
+            padding: 0.375rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .nav-btn {
+            position: relative;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-btn:hover {
+            color: var(--fg);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-btn.active {
+            color: var(--bg);
+            background: var(--accent);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .nav-btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .nav-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Canvas container */
+        .canvas-container {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+        }
+
+        #effectCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Solar Controls */
+        .solar-controls {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 60;
+            display: none;
+            gap: 0.75rem;
+            background: rgba(26, 26, 36, 0.9);
+            backdrop-filter: blur(12px);
+            padding: 0.75rem 1.25rem;
+            border-radius: 50px;
+            border: 1px solid var(--border);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .solar-controls.visible {
+            display: flex;
+            opacity: 1;
+        }
+
+        .solar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--fg);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 30px;
+            transition: all 0.2s ease;
+        }
+
+        .solar-btn:hover {
+            background: var(--card);
+            border-color: var(--muted);
+        }
+
+        .solar-btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .solar-btn.slow:hover {
+            border-color: #3b82f6;
+            color: #60a5fa;
+        }
+
+        .solar-btn.pause-btn.paused {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg);
+        }
+
+        .solar-btn.fast:hover {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .solar-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .speed-indicator {
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            color: var(--muted);
+            font-size: 0.8rem;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            min-width: 70px;
+            justify-content: center;
+        }
+
+        .speed-indicator span {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        /* Info overlay */
+        .info-overlay {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            background: rgba(26, 26, 36, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+            animation-delay: 0.3s;
+            transition: bottom 0.3s ease;
+        }
+
+        .info-overlay.with-controls {
+            bottom: 180px;
+        }
+
+        .info-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+            color: var(--accent);
+        }
+
+        .info-desc {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        /* Planet tooltip */
+        .planet-tooltip {
+            position: fixed;
+            pointer-events: none;
+            z-index: 200;
+            background: rgba(20, 20, 30, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            color: #fff;
+            opacity: 0;
+            transform: translateY(5px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .planet-tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .planet-tooltip-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .planet-tooltip-info {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 640px) {
+            .nav-container {
+                padding: 1rem;
+            }
+
+            .nav-inner {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-btn {
+                padding: 0.6rem 1rem;
+                font-size: 0.8rem;
+            }
+
+            .nav-btn span {
+                display: none;
+            }
+
+            .info-overlay {
+                left: 1rem;
+                right: 1rem;
+                transform: none;
+                animation-name: fadeInUpMobile;
+            }
+
+            .info-overlay.with-controls {
+                bottom: 200px;
+            }
+
+            @keyframes fadeInUpMobile {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .solar-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+                border-radius: 16px;
+                padding: 0.75rem;
+                max-width: calc(100% - 2rem);
+            }
+
+            .solar-btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.75rem;
+            }
+
+            .speed-indicator {
+                width: 100%;
+                justify-content: center;
+                border: none;
+                border-top: 1px solid var(--border);
+                padding-top: 0.5rem;
+                margin-top: 0.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-atmosphere"></div>
+
+    <nav class="nav-container">
+        <div class="nav-inner">
+            <div class="logo">VISUAL FX</div>
+            <div class="nav-buttons" role="tablist" aria-label="效果选择">
+                <button class="nav-btn active" data-effect="fireworks" role="tab" aria-selected="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>烟花</span>
+                </button>
+                <button class="nav-btn" data-effect="matrix" role="tab" aria-selected="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4v16M8 4v16M12 4v16M16 4v16M20 4v16"/>
+                    </svg>
+                    <span>矩阵雨</span>
+                </button>
+                <button class="nav-btn" data-effect="solar" role="tab" aria-selected="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="4"/>
+                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                    </svg>
+                    <span>太阳系</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="effectCanvas" aria-label="视觉效果画布"></canvas>
+    </div>
+
+    <!-- Planet tooltip -->
+    <div class="planet-tooltip" id="planetTooltip">
+        <div class="planet-tooltip-name" id="tooltipName"></div>
+        <div class="planet-tooltip-info" id="tooltipInfo"></div>
+    </div>
+
+    <!-- Solar system controls -->
+    <div class="solar-controls" id="solarControls">
+        <button class="solar-btn slow" id="slowBtn" aria-label="减慢速度">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="19 20 9 12 19 4 19 20"/>
+                <line x1="5" y1="19" x2="5" y2="5"/>
+            </svg>
+            减慢
+        </button>
+        <button class="solar-btn pause-btn" id="pauseBtn" aria-label="暂停/继续">
+            <svg class="play-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <svg class="pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+            </svg>
+            <span class="pause-text">暂停</span>
+        </button>
+        <button class="solar-btn fast" id="fastBtn" aria-label="加速">
+            加速
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 4 15 12 5 20 5 4"/>
+                <line x1="19" y1="5" x2="19" y2="19"/>
+            </svg>
+        </button>
+        <div class="speed-indicator">
+            速度: <span id="speedValue">1.0x</span>
+        </div>
+    </div>
+
+    <div class="info-overlay" id="infoOverlay">
+        <div class="info-title" id="infoTitle">烟花特效</div>
+        <div class="info-desc" id="infoDesc">点击画布任意位置绽放烟花</div>
+    </div>
+
+    <script>
+        // ============ 初始化变量 ============
+        const canvas = document.getElementById('effectCanvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const infoOverlay = document.getElementById('infoOverlay');
+        const infoTitle = document.getElementById('infoTitle');
+        const infoDesc = document.getElementById('infoDesc');
+        const solarControls = document.getElementById('solarControls');
+        const slowBtn = document.getElementById('slowBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const fastBtn = document.getElementById('fastBtn');
+        const speedValue = document.getElementById('speedValue');
+        const planetTooltip = document.getElementById('planetTooltip');
+        const tooltipName = document.getElementById('tooltipName');
+        const tooltipInfo = document.getElementById('tooltipInfo');
+
+        let currentEffect = 'fireworks';
+        let animationId = null;
+        let canvasWidth = 0;
+        let canvasHeight = 0;
+
+        // 鼠标位置
+        let mouseX = 0;
+        let mouseY = 0;
+
+        // 太阳系控制变量
+        let solarSpeedMultiplier = 1.0;
+        let solarPaused = false;
+
+        // 效果信息
+        const effectInfo = {
+            fireworks: { title: '烟花特效', desc: '点击画布任意位置绽放烟花' },
+            matrix: { title: '矩阵雨', desc: '代码构成的数字瀑布' },
+            solar: { title: '太阳系', desc: '行星围绕恒星运转' }
+        };
+
+        // ============ Canvas 尺寸设置 ============
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            canvasWidth = window.innerWidth;
+            canvasHeight = window.innerHeight;
+            canvas.width = canvasWidth * dpr;
+            canvas.height = canvasHeight * dpr;
+            canvas.style.width = canvasWidth + 'px';
+            canvas.style.height = canvasHeight + 'px';
+            ctx.scale(dpr, dpr);
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            if (currentEffect === 'matrix') {
+                initMatrix();
+            } else if (currentEffect === 'solar') {
+                initSolar();
+            }
+        });
+
+        // 鼠标移动追踪
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // ============ 导航按钮事件 ============
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const effect = btn.dataset.effect;
+                if (effect === currentEffect) return;
+
+                navButtons.forEach(b => {
+                    b.classList.remove('active');
+                    b.setAttribute('aria-selected', 'false');
+                });
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+
+                currentEffect = effect;
+                updateInfo();
+                restartEffect();
+            });
+        });
+
+        function updateInfo() {
+            const info = effectInfo[currentEffect];
+            infoTitle.textContent = info.title;
+            infoDesc.textContent = info.desc;
+            
+            if (currentEffect === 'solar') {
+                infoOverlay.classList.add('with-controls');
+            } else {
+                infoOverlay.classList.remove('with-controls');
+            }
+
+            infoOverlay.style.animation = 'none';
+            infoOverlay.offsetHeight;
+            infoOverlay.style.animation = 'fadeInUp 0.6s ease forwards';
+
+            if (currentEffect === 'solar') {
+                solarControls.classList.add('visible');
+            } else {
+                solarControls.classList.remove('visible');
+                planetTooltip.classList.remove('visible');
+            }
+        }
+
+        function restartEffect() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            initCurrentEffect();
+        }
+
+        // ============ 太阳系控制按钮事件 ============
+        slowBtn.addEventListener('click', () => {
+            solarSpeedMultiplier = Math.max(0.25, solarSpeedMultiplier - 0.25);
+            updateSpeedDisplay();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            solarPaused = !solarPaused;
+            const playIcon = pauseBtn.querySelector('.play-icon');
+            const pauseIcon = pauseBtn.querySelector('.pause-icon');
+            const pauseText = pauseBtn.querySelector('.pause-text');
+            
+            if (solarPaused) {
+                pauseBtn.classList.add('paused');
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+                pauseText.textContent = '继续';
+            } else {
+                pauseBtn.classList.remove('paused');
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'block';
+                pauseText.textContent = '暂停';
+            }
+        });
+
+        fastBtn.addEventListener('click', () => {
+            solarSpeedMultiplier = Math.min(5, solarSpeedMultiplier + 0.25);
+            updateSpeedDisplay();
+        });
+
+        function updateSpeedDisplay() {
+            speedValue.textContent = solarSpeedMultiplier.toFixed(1) + 'x';
+        }
+
+        // ============ 烟花效果 ============
+        let particles = [];
+        let fireworkClickHandler = null;
+
+        class Particle {
+            constructor(x, y, vx, vy, hue, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.hue = hue;
+                this.type = type || 'normal';
+                this.alpha = 1;
+                this.decay = 0.015 + Math.random() * 0.01;
+                this.size = type === 'spark' ? 1 + Math.random() : 2 + Math.random() * 2;
+                this.trail = [];
+                this.gravity = type === 'spark' ? 0.02 : 0.04;
+            }
+
+            update() {
+                if (this.type !== 'spark') {
+                    this.trail.push({ x: this.x, y: this.y });
+                    if (this.trail.length > 4) this.trail.shift();
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.vx *= 0.985;
+                this.vy *= 0.985;
+                this.alpha -= this.decay;
+                return this.alpha > 0.01;
+            }
+
+            draw() {
+                if (this.type !== 'spark') {
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const point = this.trail[i];
+                        const alpha = (i / this.trail.length) * this.alpha * 0.4;
+                        ctx.beginPath();
+                        ctx.arc(point.x, point.y, this.size * 0.6, 0, Math.PI * 2);
+                        ctx.fillStyle = `hsla(${this.hue}, 100%, 70%, ${alpha})`;
+                        ctx.fill();
+                    }
+                }
+
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, Math.max(0.5, this.size * this.alpha), 0, Math.PI * 2);
+                
+                const lightness = this.type === 'spark' ? 90 : 70;
+                ctx.fillStyle = `hsla(${this.hue}, 100%, ${lightness}%, ${this.alpha})`;
+                ctx.fill();
+            }
+        }
+
+        function createExplosion(x, y) {
+            const hue = Math.random() * 360;
+            const mainCount = 120;
+            
+            // 主爆炸粒子
+            for (let i = 0; i < mainCount; i++) {
+                const angle = (Math.PI * 2 / mainCount) * i + Math.random() * 0.2;
+                const speed = 2 + Math.random() * 5;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    hue + Math.random() * 40 - 20
+                ));
+            }
+
+            // 内层火花
+            for (let i = 0; i < 40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 3;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    hue + 30,
+                    'spark'
+                ));
+            }
+
+            // 外层零散粒子
+            for (let i = 0; i < 25; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 4 + Math.random() * 4;
+                particles.push(new Particle(
+                    x, y,
+                    Math.cos(angle) * speed,
+                    Math.sin(angle) * speed,
+                    hue + Math.random() * 60 - 30
+                ));
+            }
+        }
+
+        function animateFireworks() {
+            // 淡出效果
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.18)';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // 更新和绘制粒子
+            particles = particles.filter(p => {
+                const alive = p.update();
+                if (alive) p.draw();
+                return alive;
+            });
+
+            animationId = requestAnimationFrame(animateFireworks);
+        }
+
+        // ============ 矩阵雨效果（黑客帝国风格）============
+        let matrixDrops = [];
+        const matrixChars = 'ァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶ0123456789ABCDEF';
+
+        class MatrixDrop {
+            constructor(x) {
+                this.x = x;
+                this.y = Math.random() * -200;
+                this.speed = 3 + Math.random() * 4;
+                this.length = 5 + Math.floor(Math.random() * 15);
+                this.chars = [];
+                this.fontSize = 16;
+                this.spacing = this.fontSize + 4;
+                
+                for (let i = 0; i < this.length; i++) {
+                    this.chars.push({
+                        char: matrixChars[Math.floor(Math.random() * matrixChars.length)],
+                        flash: Math.random() < 0.1
+                    });
+                }
+                
+                this.flashTimer = 0;
+            }
+
+            update() {
+                this.y += this.speed;
+                this.flashTimer++;
+                
+                // 随机闪烁变化字符
+                if (this.flashTimer % 3 === 0) {
+                    const idx = Math.floor(Math.random() * this.length);
+                    this.chars[idx].char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                    this.chars[idx].flash = Math.random() < 0.15;
+                }
+
+                if (this.y > canvasHeight + this.length * this.spacing) {
+                    this.reset();
+                }
+            }
+
+            reset() {
+                this.y = Math.random() * -150 - 50;
+                this.speed = 3 + Math.random() * 4;
+                this.length = 5 + Math.floor(Math.random() * 15);
+                this.chars = [];
+                for (let i = 0; i < this.length; i++) {
+                    this.chars.push({
+                        char: matrixChars[Math.floor(Math.random() * matrixChars.length)],
+                        flash: Math.random() < 0.1
+                    });
+                }
+            }
+
+            draw() {
+                ctx.font = `bold ${this.fontSize}px 'Share Tech Mono', monospace`;
+
+                for (let i = 0; i < this.length; i++) {
+                    const charY = this.y - i * this.spacing;
+                    if (charY < -this.spacing || charY > canvasHeight + this.spacing) continue;
+
+                    const fadeRatio = i / this.length;
+                    const charData = this.chars[i];
+
+                    if (i === 0) {
+                        // 头部字符 - 最亮，白色/亮绿
+                        ctx.fillStyle = '#fff';
+                        ctx.shadowColor = '#0f0';
+                        ctx.shadowBlur = 15;
+                    } else if (charData.flash && i < 3) {
+                        // 闪烁字符
+                        ctx.fillStyle = '#8f8';
+                        ctx.shadowColor = '#0f0';
+                        ctx.shadowBlur = 8;
+                    } else {
+                        // 拖尾字符 - 渐暗
+                        const brightness = Math.floor(180 - fadeRatio * 150);
+                        const alpha = Math.max(0.1, 1 - fadeRatio * 0.85);
+                        ctx.fillStyle = `rgba(0, ${brightness}, 0, ${alpha})`;
+                        ctx.shadowBlur = 0;
+                    }
+
+                    ctx.fillText(charData.char, this.x, charY);
+                }
+                
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function initMatrix() {
+            matrixDrops = [];
+            const columnWidth = 24;
+            const columns = Math.floor(canvasWidth / columnWidth);
+            
+            for (let i = 0; i < columns; i++) {
+                // 随机间隔，营造自然感
+                if (Math.random() > 0.25) {
+                    matrixDrops.push(new MatrixDrop(i * columnWidth + columnWidth / 2));
+                }
+            }
+        }
+
+        function animateMatrix() {
+            // 更快的淡出，避免拖尾过长
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            matrixDrops.forEach(drop => {
+                drop.update();
+                drop.draw();
+            });
+
+            animationId = requestAnimationFrame(animateMatrix);
+        }
+
+        // ============ 太阳系效果 ============
+        let planets = [];
+        let stars = [];
+
+        class Planet {
+            constructor(name, distance, radius, speed, color, moons, hasRings, info) {
+                this.name = name;
+                this.distance = distance;
+                this.radius = Math.max(2, radius);
+                this.speed = speed;
+                this.color = color;
+                this.angle = Math.random() * Math.PI * 2;
+                this.moons = moons || [];
+                this.moonAngles = this.moons.map(() => Math.random() * Math.PI * 2);
+                this.hasRings = hasRings || false;
+                this.info = info || '';
+            }
+
+            update(dt) {
+                this.angle += this.speed * dt;
+                for (let i = 0; i < this.moonAngles.length; i++) {
+                    this.moonAngles[i] += this.speed * 5 * dt;
+                }
+            }
+
+            getPosition(centerX, centerY) {
+                return {
+                    x: centerX + Math.cos(this.angle) * this.distance,
+                    y: centerY + Math.sin(this.angle) * this.distance
+                };
+            }
+
+            draw(centerX, centerY) {
+                const pos = this.getPosition(centerX, centerY);
+                const x = pos.x;
+                const y = pos.y;
+
+                // Orbit path
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, this.distance, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Saturn rings (behind)
+                if (this.hasRings) {
+                    this.drawRings(x, y, false);
+                }
+
+                // Planet gradient
+                const gradient = ctx.createRadialGradient(
+                    x - this.radius * 0.3, y - this.radius * 0.3, 0,
+                    x, y, this.radius
+                );
+                gradient.addColorStop(0, this.color.light);
+                gradient.addColorStop(0.5, this.color.main);
+                gradient.addColorStop(1, this.color.dark);
+
+                ctx.beginPath();
+                ctx.arc(x, y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Glow
+                ctx.beginPath();
+                ctx.arc(x, y, this.radius * 1.8, 0, Math.PI * 2);
+                const glowGradient = ctx.createRadialGradient(x, y, this.radius * 0.8, x, y, this.radius * 1.8);
+                glowGradient.addColorStop(0, this.color.glow);
+                glowGradient.addColorStop(1, 'transparent');
+                ctx.fillStyle = glowGradient;
+                ctx.fill();
+
+                // Saturn rings (front)
+                if (this.hasRings) {
+                    this.drawRings(x, y, true);
+                }
+
+                // Moons
+                this.moons.forEach((moon, i) => {
+                    const moonX = x + Math.cos(this.moonAngles[i]) * moon.distance;
+                    const moonY = y + Math.sin(this.moonAngles[i]) * moon.distance;
+                    
+                    ctx.beginPath();
+                    ctx.arc(moonX, moonY, Math.max(1.5, moon.radius), 0, Math.PI * 2);
+                    ctx.fillStyle = moon.color;
+                    ctx.fill();
+                });
+            }
+
+            drawRings(x, y, isFront) {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.scale(1, 0.35);
+
+                const innerRadius = this.radius * 1.6;
+                const outerRadius = this.radius * 2.5;
+
+                ctx.beginPath();
+                if (isFront) {
+                    ctx.arc(0, 0, outerRadius, 0, Math.PI);
+                    ctx.arc(0, 0, innerRadius, Math.PI, 0, true);
+                } else {
+                    ctx.arc(0, 0, outerRadius, Math.PI, Math.PI * 2);
+                    ctx.arc(0, 0, innerRadius, Math.PI * 2, Math.PI, true);
+                }
+                ctx.closePath();
+
+                const ringGradient = ctx.createRadialGradient(0, 0, innerRadius, 0, 0, outerRadius);
+                ringGradient.addColorStop(0, 'rgba(200, 170, 120, 0.6)');
+                ringGradient.addColorStop(0.5, 'rgba(170, 140, 90, 0.4)');
+                ringGradient.addColorStop(1, 'rgba(140, 110, 70, 0.2)');
+                ctx.fillStyle = ringGradient;
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            isHovered(mx, my, centerX, centerY) {
+                const pos = this.getPosition(centerX, centerY);
+                const dist = Math.sqrt((mx - pos.x) ** 2 + (my - pos.y) ** 2);
+                return dist < this.radius + 15;
+            }
+        }
+
+        function initSolar() {
+            stars = [];
+            for (let i = 0; i < 300; i++) {
+                stars.push({
+                    x: Math.random() * canvasWidth,
+                    y: Math.random() * canvasHeight,
+                    size: Math.random() * 1.2 + 0.3,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: 0.01 + Math.random() * 0.03
+                });
+            }
+
+            const minDim = Math.min(canvasWidth, canvasHeight);
+            const baseDistance = minDim * 0.045;
+
+            planets = [
+                new Planet('水星 Mercury', baseDistance * 1.8, 6, 0.04, 
+                    { light: '#c8c8c8', main: '#909090', dark: '#505050', glow: 'rgba(200, 200, 200, 0.2)' },
+                    [], false, '最接近太阳的行星'),
+                new Planet('金星 Venus', baseDistance * 2.6, 10, 0.03, 
+                    { light: '#f0d090', main: '#c8a060', dark: '#8a6030', glow: 'rgba(240, 208, 144, 0.2)' },
+                    [], false, '最亮的行星，启明星'),
+                new Planet('地球 Earth', baseDistance * 3.5, 11, 0.025, 
+                    { light: '#70b0f0', main: '#3080c0', dark: '#105090', glow: 'rgba(112, 176, 240, 0.3)' },
+                    [{ distance: 20, radius: 3, color: '#c0c0c0' }], false, '我们的家园'),
+                new Planet('火星 Mars', baseDistance * 4.5, 8, 0.02, 
+                    { light: '#e08050', main: '#b05030', dark: '#702010', glow: 'rgba(224, 128, 80, 0.2)' },
+                    [], false, '红色星球'),
+                new Planet('木星 Jupiter', baseDistance * 6.5, 26, 0.01, 
+                    { light: '#e0b080', main: '#c08050', dark: '#805030', glow: 'rgba(224, 176, 128, 0.2)' },
+                    [
+                        { distance: 36, radius: 3.5, color: '#a08060' },
+                        { distance: 44, radius: 4, color: '#909090' },
+                        { distance: 52, radius: 3, color: '#b0a080' }
+                    ], false, '最大的行星'),
+                new Planet('土星 Saturn', baseDistance * 8.5, 22, 0.006, 
+                    { light: '#f0e0a0', main: '#c0a060', dark: '#806030', glow: 'rgba(240, 224, 160, 0.2)' },
+                    [], true, '拥有美丽光环'),
+                new Planet('天王星 Uranus', baseDistance * 10.5, 14, 0.004, 
+                    { light: '#90e0e0', main: '#50a0a0', dark: '#206060', glow: 'rgba(144, 224, 224, 0.2)' },
+                    [], false, '侧躺旋转的行星'),
+                new Planet('海王星 Neptune', baseDistance * 12.5, 13, 0.003, 
+                    { light: '#6090e0', main: '#3060b0', dark: '#103080', glow: 'rgba(96, 144, 224, 0.2)' },
+                    [{ distance: 20, radius: 2.5, color: '#a0b0c0' }], false, '最远的大行星')
+            ];
+
+            solarSpeedMultiplier = 1.0;
+            solarPaused = false;
+            updateSpeedDisplay();
+            
+            pauseBtn.classList.remove('paused');
+            pauseBtn.querySelector('.play-icon').style.display = 'none';
+            pauseBtn.querySelector('.pause-icon').style.display = 'block';
+            pauseBtn.querySelector('.pause-text').textContent = '暂停';
+        }
+
+        function drawSun(centerX, centerY) {
+            // 太阳半径放大到1.5倍
+            const sunRadius = Math.max(45, Math.min(canvasWidth, canvasHeight) * 0.04 * 1.5);
+            
+            // 外层光晕
+            const corona = ctx.createRadialGradient(centerX, centerY, sunRadius, centerX, centerY, sunRadius * 4);
+            corona.addColorStop(0, 'rgba(255, 200, 80, 0.5)');
+            corona.addColorStop(0.3, 'rgba(255, 150, 50, 0.25)');
+            corona.addColorStop(0.6, 'rgba(255, 100, 30, 0.08)');
+            corona.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, sunRadius * 4, 0, Math.PI * 2);
+            ctx.fillStyle = corona;
+            ctx.fill();
+
+            // 内层光晕
+            const innerGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, sunRadius * 1.2);
+            innerGlow.addColorStop(0, '#ffffff');
+            innerGlow.addColorStop(0.15, '#fffae0');
+            innerGlow.addColorStop(0.4, '#ffdd00');
+            innerGlow.addColorStop(0.7, '#ff9900');
+            innerGlow.addColorStop(1, '#ff5500');
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, sunRadius, 0, Math.PI * 2);
+            ctx.fillStyle = innerGlow;
+            ctx.fill();
+
+            // 表面纹理
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, sunRadius * 0.9, 0, Math.PI * 2);
+            const texture = ctx.createRadialGradient(
+                centerX - sunRadius * 0.2, centerY - sunRadius * 0.2, 0,
+                centerX, centerY, sunRadius * 0.9
+            );
+            texture.addColorStop(0, 'rgba(255, 255, 240, 0.4)');
+            texture.addColorStop(1, 'transparent');
+            ctx.fillStyle = texture;
+            ctx.fill();
+        }
+
+        function animateSolar() {
+            ctx.fillStyle = '#030306';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            const centerX = canvasWidth / 2;
+            const centerY = canvasHeight / 2;
+
+            // 星星闪烁
+            stars.forEach(star => {
+                star.twinkle += star.speed;
+                const alpha = 0.3 + Math.sin(star.twinkle) * 0.4;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.1, alpha)})`;
+                ctx.fill();
+            });
+
+            // 绘制太阳
+            drawSun(centerX, centerY);
+
+            // 更新和绘制行星
+            const dt = 0.016 * solarSpeedMultiplier;
+            
+            if (!solarPaused) {
+                planets.forEach(planet => {
+                    planet.update(dt);
+                });
+            }
+            
+            planets.forEach(planet => {
+                planet.draw(centerX, centerY);
+            });
+
+            // 检测鼠标悬停
+            let hoveredPlanet = null;
+            for (let i = planets.length - 1; i >= 0; i--) {
+                if (planets[i].isHovered(mouseX, mouseY, centerX, centerY)) {
+                    hoveredPlanet = planets[i];
+                    break;
+                }
+            }
+
+            if (hoveredPlanet) {
+                tooltipName.textContent = hoveredPlanet.name;
+                tooltipInfo.textContent = hoveredPlanet.info;
+                planetTooltip.style.left = (mouseX + 20) + 'px';
+                planetTooltip.style.top = (mouseY - 10) + 'px';
+                planetTooltip.classList.add('visible');
+            } else {
+                planetTooltip.classList.remove('visible');
+            }
+
+            animationId = requestAnimationFrame(animateSolar);
+        }
+
+        // ============ 效果切换 ============
+        function initCurrentEffect() {
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            if (fireworkClickHandler) {
+                canvas.removeEventListener('click', fireworkClickHandler);
+                canvas.removeEventListener('touchstart', fireworkClickHandler);
+                fireworkClickHandler = null;
+            }
+
+            particles = [];
+            matrixDrops = [];
+            planets = [];
+            stars = [];
+
+            updateInfo();
+
+            switch (currentEffect) {
+                case 'fireworks':
+                    fireworkClickHandler = (e) => {
+                        e.preventDefault();
+                        let x, y;
+                        if (e.type === 'touchstart') {
+                            const touch = e.touches[0];
+                            x = touch.clientX;
+                            y = touch.clientY;
+                        } else {
+                            x = e.clientX;
+                            y = e.clientY;
+                        }
+                        // 直接在点击位置创建爆炸
+                        createExplosion(x, y);
+                    };
+                    
+                    canvas.addEventListener('click', fireworkClickHandler);
+                    canvas.addEventListener('touchstart', fireworkClickHandler, { passive: false });
+                    
+                    // 初始展示几个烟花
+                    setTimeout(() => createExplosion(canvasWidth * 0.3, canvasHeight * 0.4), 300);
+                    setTimeout(() => createExplosion(canvasWidth * 0.7, canvasHeight * 0.35), 600);
+                    setTimeout(() => createExplosion(canvasWidth * 0.5, canvasHeight * 0.5), 900);
+                    
+                    animateFireworks();
+                    break;
+
+                case 'matrix':
+                    initMatrix();
+                    animateMatrix();
+                    break;
+
+                case 'solar':
+                    initSolar();
+                    animateSolar();
+                    break;
+            }
+        }
+
+        // ============ 启动 ============
+        initCurrentEffect();
+    </script>
+</body>
+</html>

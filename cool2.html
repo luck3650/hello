@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>特效工坊</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:black; overflow:hidden; font-family:'Microsoft YaHei',sans-serif; }
+        canvas { display:block; width:100vw; height:100vh; background:black; }
+        .mode-switcher {
+            position:fixed; top:20px; left:20px; z-index:100;
+            display:flex; gap:12px; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px);
+            padding:12px 20px; border-radius:50px; border:1px solid rgba(255,255,255,0.2);
+            box-shadow:0 4px 20px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+        .mode-btn {
+            background:transparent; border:none; color:rgba(255,255,255,0.7); font-size:16px;
+            padding:8px 18px; border-radius:30px; cursor:pointer; transition:all 0.3s ease;
+            font-weight:500; border:1px solid transparent;
+        }
+        .mode-btn:hover { background:rgba(255,255,255,0.15); color:white; border-color:rgba(255,255,255,0.3); }
+        .mode-btn.active { background:rgba(255,215,0,0.25); color:#ffd700; border-color:#ffd700; box-shadow:0 0 15px rgba(255,215,0,0.5); }
+
+        /* 太阳系速度控制面板 */
+        .solar-control {
+            position:fixed; top:100px; left:20px; z-index:100;
+            display:flex; gap:10px; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px);
+            padding:10px 16px; border-radius:40px; border:1px solid rgba(255,255,255,0.2);
+            box-shadow:0 4px 15px rgba(0,0,0,0.5);
+            transition: opacity 0.2s;
+            pointer-events: auto;
+        }
+        .solar-control.hidden { display: none; }
+        .speed-btn {
+            background:rgba(255,255,255,0.1); border:none; color:white; font-size:15px;
+            padding:6px 16px; border-radius:30px; cursor:pointer; transition:0.2s;
+            border:1px solid rgba(255,255,255,0.2); min-width:60px;
+        }
+        .speed-btn:hover { background:rgba(255,215,0,0.3); border-color:#ffd700; }
+        .speed-indicator {
+            color:#ffd700; font-size:15px; padding:6px 12px; 
+            background:rgba(0,0,0,0.3); border-radius:30px; border:1px solid #ffd70055;
+        }
+    </style>
+</head>
+<body>
+    <div class="mode-switcher">
+        <button class="mode-btn active" data-mode="fireworks">🎆 烟花</button>
+        <button class="mode-btn" data-mode="matrix">💊 矩阵雨</button>
+        <button class="mode-btn" data-mode="solar">🌌 太阳系</button>
+    </div>
+
+    <!-- 太阳系速度控制 (默认隐藏) -->
+    <div class="solar-control hidden" id="solarControl">
+        <button class="speed-btn" id="speedDown">减速</button>
+        <button class="speed-btn" id="speedUp">加速</button>
+        <button class="speed-btn" id="togglePause">暂停</button>
+        <span class="speed-indicator" id="speedDisplay">速度 x1.0</span>
+    </div>
+
+    <canvas id="mainCanvas"></canvas>
+
+    <script>
+        (function() {
+            "use strict";
+
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const BANNER_HEIGHT = 120;
+            const CLICK_PARTICLES = 16;
+            const FW_MAX_PARTICLES = 300;
+
+            const random = (min, max) => Math.random() * (max - min) + min;
+            const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            const randomColor = (s=100, l=65) => `hsl(${Math.random()*360},${s}%,${l}%)`;
+
+            let currentMode = 'fireworks';
+            let ringParticles = [];
+            let bannerParticles = [];
+
+            let fireworksParticles = [];
+
+            let matrixColumns = [];
+            const MATRIX_FONT = 20;
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%"\'#&_(),.;:?!\\|{}<>[]~^'.split('');
+
+            let solarTime = 0;
+            let hoverPlanet = null;
+            // 太阳系速度控制变量
+            let solarSpeedMultiplier = 1.0;   // 速度倍率
+            let solarPaused = false;           // 暂停状态
+
+            const planets = [
+                { name:'水星', color:'#aaa', radius:4, distance:50, period:0.24 },
+                { name:'金星', color:'#f0c674', radius:6, distance:80, period:0.62 },
+                { name:'地球', color:'#3a75c4', radius:7, distance:110, period:1.0 },
+                { name:'火星', color:'#d95d5d', radius:5, distance:140, period:1.88 },
+                { name:'木星', color:'#e0b060', radius:12, distance:190, period:11.86 },
+                { name:'土星', color:'#e8c080', radius:10, distance:240, period:29.46, hasRing:true },
+                { name:'天王星', color:'#6fd4d4', radius:8, distance:290, period:84.01 },
+                { name:'海王星', color:'#4169e1', radius:8, distance:340, period:164.8 }
+            ];
+            const BASE_SPEED = 0.5;  // 基础角速度
+            planets.forEach(p => p.speedFactor = BASE_SPEED / p.period);
+
+            // ---------- 画布自适应 ----------
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initCurrentMode();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // ---------- 初始化当前模式 ----------
+            function initCurrentMode() {
+                if (currentMode === 'fireworks') {
+                    fireworksParticles = [];
+                    for (let i = 0; i < 6; i++) {
+                        fireworksParticles.push(spawnFirework());
+                    }
+                    for (let i = 0; i < 40; i++) {
+                        fireworksParticles.push({
+                            x: random(0, canvas.width),
+                            y: random(0, canvas.height * 0.6),
+                            vx: random(-1.5, 1.5), 
+                            vy: random(-1.5, 1.5),
+                            color: randomColor(100, 70),
+                            size: random(2, 5),
+                            life: random(0.9, 1.5),
+                            affectedByGravity: true
+                        });
+                    }
+                } else if (currentMode === 'matrix') {
+                    initMatrix();
+                } else if (currentMode === 'solar') {
+                    solarTime = random(0, 100);
+                }
+            }
+
+            // ---------- 横幅粒子 ----------
+            for (let i = 0; i < 30; i++) {
+                bannerParticles.push({
+                    x: random(0, canvas.width), y: random(10, BANNER_HEIGHT-10),
+                    vx: random(-0.5,0.5), vy: random(-0.3,0.3),
+                    color: randomColor(90,70), size: random(2,5)
+                });
+            }
+
+            function updateBanner() {
+                for (let p of bannerParticles) {
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x<0 || p.x>canvas.width) p.vx *= -1;
+                    if (p.y<0 || p.y>BANNER_HEIGHT) p.vy *= -1;
+                    p.x = Math.min(Math.max(p.x,0), canvas.width);
+                    p.y = Math.min(Math.max(p.y,0), BANNER_HEIGHT);
+                }
+            }
+
+            function drawBanner() {
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(0,0,canvas.width,BANNER_HEIGHT);
+
+                for (let p of bannerParticles) {
+                    ctx.globalAlpha = 0.9;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+
+                ctx.shadowColor = 'rgba(255,215,0,0.8)';
+                ctx.shadowBlur = 20;
+                ctx.font = 'bold 42px "Microsoft YaHei", sans-serif';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                let title = { 
+                    fireworks:'🎆 烟花盛宴', 
+                    matrix:'💊 矩阵代码雨', 
+                    solar:'🌌 太阳系漫游' 
+                }[currentMode];
+                ctx.fillText(title, canvas.width/2, BANNER_HEIGHT/2);
+
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+                ctx.globalAlpha = 1.0;
+            }
+
+            // ---------- 点击圆环 ----------
+            function spawnRingParticles(x, y) {
+                for (let i = 0; i < CLICK_PARTICLES; i++) {
+                    let angle = (i/CLICK_PARTICLES)*2*Math.PI + random(-0.2,0.2);
+                    let speed = random(2,5);
+                    ringParticles.push({
+                        x, y,
+                        vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed,
+                        color: randomColor(100,70), size: random(3,7),
+                        life: 1.0
+                    });
+                }
+            }
+
+            canvas.addEventListener('click', (e) => {
+                let rect = canvas.getBoundingClientRect();
+                spawnRingParticles(e.clientX - rect.left, e.clientY - rect.top);
+            });
+
+            function updateRing() {
+                for (let i=ringParticles.length-1; i>=0; i--) {
+                    let p = ringParticles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    p.vx *= 0.98; p.vy *= 0.98;
+                    p.size += 0.05;
+                    p.life -= 0.015;
+                    if (p.life<=0 || p.y>canvas.height+50 || p.x<-50 || p.x>canvas.width+50)
+                        ringParticles.splice(i,1);
+                }
+            }
+
+            function drawRing() {
+                for (let p of ringParticles) {
+                    ctx.globalAlpha = p.life * 0.9;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * p.life, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+            }
+
+            // ---------- 烟花 ----------
+            function spawnFirework() {
+                return {
+                    x: random(canvas.width*0.2, canvas.width*0.8),
+                    y: canvas.height,
+                    vx: random(-0.8,0.8), 
+                    vy: random(-8,-5),
+                    color: `hsl(${random(30,60)},100%,70%)`,
+                    life: 1.4,
+                    size: 4,
+                    affectedByGravity: false, 
+                    isFirework: true
+                };
+            }
+
+            function explodeFirework(fw) {
+                for (let i=0; i<60+randomInt(0,40); i++) {
+                    let angle = Math.random()*2*Math.PI;
+                    let speed = random(2,5);
+                    fireworksParticles.push({
+                        x: fw.x, y: fw.y,
+                        vx: Math.cos(angle)*speed*random(0.5,1.5),
+                        vy: Math.sin(angle)*speed*random(0.5,1.5)-0.5,
+                        color: randomColor(100,70),
+                        size: random(2,4), 
+                        life: random(0.9,1.5),
+                        affectedByGravity: true
+                    });
+                }
+            }
+
+            function updateFireworks() {
+                if (currentMode !== 'fireworks') return;
+
+                if (fireworksParticles.length < FW_MAX_PARTICLES && Math.random()<0.03) {
+                    fireworksParticles.push(spawnFirework());
+                }
+
+                for (let i=fireworksParticles.length-1; i>=0; i--) {
+                    let p = fireworksParticles[i];
+
+                    if (p.affectedByGravity) p.vy += 0.05;
+                    p.vx *= 0.99; 
+                    p.vy *= 0.99;
+                    p.x += p.vx; 
+                    p.y += p.vy;
+                    p.life -= 0.005;
+
+                    if (p.life<=0.02 || p.y>canvas.height+100 || p.x<-100 || p.x>canvas.width+100) {
+                        fireworksParticles.splice(i,1);
+                        continue;
+                    }
+
+                    if (p.isFirework && (p.y < 200 || p.vy >= -0.5 || Math.random() < 0.015)) {
+                        explodeFirework(p);
+                        fireworksParticles.splice(i,1);
+                    }
+                }
+            }
+
+            function drawFireworks() {
+                if (currentMode !== 'fireworks') return;
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+
+                for (let p of fireworksParticles) {
+                    ctx.globalAlpha = p.life * 0.8;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * Math.max(0.3, p.life), 0, 2*Math.PI);
+                    ctx.fill();
+                }
+            }
+
+            // ---------- 矩阵雨 ----------
+            function initMatrix() {
+                let cols = Math.max(1, Math.ceil(canvas.width / MATRIX_FONT));
+                matrixColumns = [];
+                for (let i=0; i<cols; i++) {
+                    let len = randomInt(8, 25);
+                    let arr = [];
+                    for (let j=0; j<len; j++) arr.push(chars[Math.floor(Math.random()*chars.length)]);
+                    matrixColumns.push({
+                        x: i * MATRIX_FONT,
+                        y: randomInt(-canvas.height, 0),
+                        speed: random(2, 6),
+                        chars: arr
+                    });
+                }
+            }
+
+            function updateMatrix() {
+                if (currentMode !== 'matrix') return;
+                for (let col of matrixColumns) {
+                    col.y += col.speed;
+                    if (col.y > canvas.height + 200) {
+                        col.y = -randomInt(100, 500);
+                        let len = randomInt(8, 25);
+                        col.chars = [];
+                        for (let j=0; j<len; j++) col.chars.push(chars[Math.floor(Math.random()*chars.length)]);
+                    }
+                    if (Math.random() < 0.05) {
+                        let idx = randomInt(0, col.chars.length-1);
+                        col.chars[idx] = chars[Math.floor(Math.random()*chars.length)];
+                    }
+                }
+            }
+
+            function drawMatrix() {
+                if (currentMode !== 'matrix') {
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0,0,canvas.width,canvas.height);
+                    return;
+                }
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.font = `${MATRIX_FONT}px "Courier New", monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                for (let col of matrixColumns) {
+                    for (let i=0; i<col.chars.length; i++) {
+                        let y = col.y - i * MATRIX_FONT;
+                        if (y > 0 && y < canvas.height) {
+                            let bright = i === 0 ? 255 : 100 + 50 * (1 - i/col.chars.length);
+                            ctx.fillStyle = `rgb(0, ${bright}, 0)`;
+                            ctx.fillText(col.chars[i], col.x + MATRIX_FONT/2, y);
+                        }
+                    }
+                }
+            }
+
+            // ---------- 太阳系 (带速度控制) ----------
+            function updateSolar() {
+                if (currentMode !== 'solar') return;
+                if (!solarPaused) {
+                    solarTime += 0.012 * solarSpeedMultiplier;
+                }
+            }
+
+            function drawSolar() {
+                if (currentMode !== 'solar') {
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0,0,canvas.width,canvas.height);
+                    return;
+                }
+
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+
+                // 星星
+                ctx.fillStyle = 'white';
+                for (let i=0; i<150; i++) {
+                    if (i % 2 === 0) continue;
+                    ctx.fillRect(random(0, canvas.width), random(0, canvas.height), 1.5, 1.5);
+                }
+
+                let cx = canvas.width/2, cy = canvas.height/2;
+
+                // 太阳
+                ctx.shadowColor = '#ffaa00';
+                ctx.shadowBlur = 30;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 22, 0, 2*Math.PI);
+                ctx.fillStyle = '#ffaa00';
+                ctx.fill();
+
+                for (let i=0; i<planets.length; i++) {
+                    let p = planets[i];
+
+                    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, p.distance, 0, 2*Math.PI);
+                    ctx.stroke();
+
+                    let angle = solarTime * p.speedFactor + i * 0.7;
+                    let x = cx + p.distance * Math.cos(angle);
+                    let y = cy + p.distance * Math.sin(angle);
+
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 18;
+                    ctx.beginPath();
+                    ctx.arc(x, y, p.radius, 0, 2*Math.PI);
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+
+                    if (p.hasRing) {
+                        ctx.strokeStyle = '#c0a060';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.ellipse(x, y, p.radius*1.8, p.radius*0.6, angle + 0.3, 0, 2*Math.PI);
+                        ctx.stroke();
+                    }
+
+                    if (hoverPlanet === i) {
+                        ctx.font = 'bold 16px "Microsoft YaHei"';
+                        ctx.fillStyle = 'white';
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = 'white';
+                        ctx.fillText(p.name, x + 22, y - 12);
+                    }
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = 'transparent';
+            }
+
+            // 鼠标移动检测 (太阳系悬停)
+            canvas.addEventListener('mousemove', (e) => {
+                if (currentMode !== 'solar') { 
+                    hoverPlanet = null; 
+                    return; 
+                }
+                let rect = canvas.getBoundingClientRect();
+                let mx = e.clientX - rect.left, my = e.clientY - rect.top;
+                let cx = canvas.width/2, cy = canvas.height/2;
+                hoverPlanet = null;
+                for (let i=0; i<planets.length; i++) {
+                    let p = planets[i];
+                    let angle = solarTime * p.speedFactor + i * 0.7;
+                    let x = cx + p.distance * Math.cos(angle);
+                    let y = cy + p.distance * Math.sin(angle);
+                    if (Math.hypot(mx - x, my - y) < p.radius + 20) {
+                        hoverPlanet = i;
+                        break;
+                    }
+                }
+            });
+
+            // ---------- 模式切换与速度控制UI ----------
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            const solarControl = document.getElementById('solarControl');
+            const speedDownBtn = document.getElementById('speedDown');
+            const speedUpBtn = document.getElementById('speedUp');
+            const togglePauseBtn = document.getElementById('togglePause');
+            const speedDisplay = document.getElementById('speedDisplay');
+
+            // 更新速度显示与暂停按钮文字
+            function updateSolarUI() {
+                speedDisplay.textContent = `速度 x${solarSpeedMultiplier.toFixed(1)}`;
+                togglePauseBtn.textContent = solarPaused ? '继续' : '暂停';
+            }
+
+            // 加速
+            speedUpBtn.addEventListener('click', () => {
+                if (currentMode !== 'solar') return;
+                solarSpeedMultiplier *= 1.2;
+                if (solarSpeedMultiplier > 10) solarSpeedMultiplier = 10; // 上限
+                updateSolarUI();
+            });
+
+            // 减速
+            speedDownBtn.addEventListener('click', () => {
+                if (currentMode !== 'solar') return;
+                solarSpeedMultiplier /= 1.2;
+                if (solarSpeedMultiplier < 0.1) solarSpeedMultiplier = 0.1; // 下限
+                updateSolarUI();
+            });
+
+            // 暂停/继续
+            togglePauseBtn.addEventListener('click', () => {
+                if (currentMode !== 'solar') return;
+                solarPaused = !solarPaused;
+                updateSolarUI();
+            });
+
+            // 切换模式：显示/隐藏速度控制面板，并重置UI状态（非必需，但推荐）
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMode = btn.dataset.mode;
+                    initCurrentMode();
+
+                    // 显示或隐藏太阳系控制面板
+                    if (currentMode === 'solar') {
+                        solarControl.classList.remove('hidden');
+                        // 确保UI与当前状态同步
+                        updateSolarUI();
+                    } else {
+                        solarControl.classList.add('hidden');
+                        // 离开太阳系时，暂停状态自动恢复？不，保留以便下次进入。不清除速度倍率。
+                    }
+
+                    if (currentMode !== 'solar') hoverPlanet = null;
+                });
+            });
+
+            // 初始状态：当前模式为fireworks，隐藏控制面板
+            solarControl.classList.add('hidden');
+            updateSolarUI(); // 初始化显示
+
+            initCurrentMode();
+
+            // ---------- 动画循环 ----------
+            function animate() {
+                updateRing();
+                updateBanner();
+
+                if (currentMode === 'fireworks') {
+                    updateFireworks();
+                    drawFireworks();
+                } else if (currentMode === 'matrix') {
+                    updateMatrix();
+                    drawMatrix();
+                } else if (currentMode === 'solar') {
+                    updateSolar();
+                    drawSolar();
+                }
+
+                drawBanner();
+                drawRing();
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+    </script>
+</body>
+</html>
