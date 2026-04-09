@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>首页</title>
+    <title>茶道</title>
     <style>
         * {
             margin: 0;
@@ -170,18 +170,10 @@
         }
 
         .hero-content h1 {
-            font-size: clamp(2.5rem, 8vw, 4.5rem);
+            font-size: clamp(2.2rem, 8vw, 4.5rem);
             font-family: var(--font-serif);
             margin-bottom: 1rem;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-			/* 平板 */
-			  @media (max-width: 768px) {
-				font-size: 40px;
-			  }
-		  /* 手机 */
-		  @media (max-width: 480px) {
-			font-size: 30px;
-		  }
         }
 
         .hero-content p {
@@ -280,9 +272,11 @@
 
         .story-text {
             font-size: 1.1rem;
-            margin-bottom: 2rem;
+            margin-bottom: 0.6rem;
             line-height: 1.8;
-            text-indent: 2em;
+			text-align: justify;
+			text-indent: 2em; /* 缩进两个中文字符的宽度 */
+
         }
 
         /* === 页脚 === */
@@ -347,7 +341,7 @@
             <div class="container hero-content">
                 <h1>源自山野 · 敬奉知己</h1>
                 <p>静品茶香，感悟禅道</p>
-                <a href="/products.html" class="btn btn-primary">探索茶品</a>
+                <a  class="btn btn-primary">探索新世界</a>
             </div>
         </section>
 
@@ -377,18 +371,17 @@
 
         <section class="section story">
             <div class="container story-content">
-                <h2 class="section-title">关于我们</h2>
-                <p class="story-text">
-                    茶叶源于中国，最早是被作为祭品使用的，但从春秋后期就被人们作为菜食。 <br>在西汉中期发展为药用，西汉后期才发展为宫廷高级饮料，普及民间作为普通饮料那是西晋以后的事。<br>发现最早人工种植茶叶的遗迹在浙江余姚的田螺山遗址，距今已有6000多年的历史。<br>
-					饮茶始于中国。中国茶道，承袭这六千年的文化脉络，致力于将这片东方树叶的故事，讲给世界听。
-                </p>
+                <h2 class="section-title">关于茶</h2>
+                <p class="story-text"> 茶叶源于中国，它最早被作为祭品使用。但从春秋后期就被人们作为菜食。在西汉中期发展为药用，西汉后期才发展为宫廷高级饮料。普及民间作为普通饮料那是西晋以后的事。</p>
+				<p class="story-text">  最早发现人工种植茶叶的遗迹在浙江余姚的田螺山遗址，距今已有6000多年的历史。</p>
+				<p class="story-text"> 饮茶始于中国。中国茶道，承袭这六千年的文化脉络，致力于将这片东方树叶的故事，讲给世界听。  </p>
             </div>
         </section>
     </main>
 
     <footer class="footer">
         <div class="container footer-content">
-            <p>禅与茶道，一杯纯粹，敬知己。</p>
+            <p>&copy; 禅与茶道。一杯纯粹，敬知己。</p>
         </div>
     </footer>
 
@@ -432,4 +425,4 @@
         })();
     </script>
 </body>
-</html> 
+</html>
